@@ -1,26 +1,34 @@
-from pydantic import BaseModel, EmailStr
-from uuid import UUID
-
-
-class UserOut(BaseModel):
-    id: UUID
-    username: str
-    email: EmailStr
-    role: str
-    is_banned: bool
-
-    class Config:
-        from_attributes = True
-
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict
 
 class UserCreate(BaseModel):
     username: str
-    email: EmailStr
     password: str
-    role: str = "user"
+    email: str | None = None
 
 
-class UserUpdate(BaseModel):
-    role: str | None = None
-    is_banned: bool | None = None
-    password: str | None = None
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int
+    username: str
+    email: str | None = None
+    created_at: datetime
+
+
+class UsernameCheckOut(BaseModel):
+    available: bool
+
+
+class EmailCheckOut(BaseModel):
+    available: bool
+
+
+class AuthMeOut(BaseModel):
+    username: str
+    role: str

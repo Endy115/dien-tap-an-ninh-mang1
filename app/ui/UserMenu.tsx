@@ -8,7 +8,14 @@ type Props = {
 
 export default function UserMenu({ user }: Props) {
   const [open, setOpen] = useState(false);
+  const [displayUser, setDisplayUser] = useState(user);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("mmhcs_username");
+    if (stored) setDisplayUser(stored);
+  }, []);
 
   useEffect(() => {
     const onClick = (evt: MouseEvent) => {
@@ -29,9 +36,9 @@ export default function UserMenu({ user }: Props) {
         className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:translate-y-0 active:scale-[0.98]"
       >
         <span className="grid h-6 w-6 place-items-center rounded-full bg-sky-100 text-xs font-bold text-sky-700">
-          {user ? user.slice(0, 1).toUpperCase() : "U"}
+          {displayUser ? displayUser.slice(0, 1).toUpperCase() : "U"}
         </span>
-        <span className="hidden sm:inline">{user}</span>
+        <span className="hidden sm:inline">{displayUser}</span>
         <span className="text-slate-400">▾</span>
       </button>
 
@@ -39,7 +46,7 @@ export default function UserMenu({ user }: Props) {
         <div className="absolute right-0 z-20 mt-2 w-56 rounded-xl border border-slate-200 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.12)]">
           <div className="border-b border-slate-100 px-4 py-3">
             <div className="text-xs text-slate-500">Tài khoản</div>
-            <div className="text-sm font-semibold text-slate-900">{user}</div>
+            <div className="text-sm font-semibold text-slate-900">{displayUser}</div>
           </div>
           <div className="py-2">
             <button

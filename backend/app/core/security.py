@@ -1,37 +1,35 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-from jose import jwt
-from passlib.context import CryptContext
-
-from app.core.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import base64
+import binascii
+import hashlib
+import hmac
+import secrets
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    if not password:
+        raise ValueError("Password must not be empty")
+
+    iterations = 310_000
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    return "pbkdf2_sha256${}${}${}".format(
+        iterations,
+        base64.b64encode(salt).decode("ascii"),
+        base64.b64encode(digest).decode("ascii"),
+    )
 
 
-def verify_password(password: str, hashed: str) -> bool:
-    return pwd_context.verify(password, hashed)
-
-
-def create_access_token(sub: str, role: str) -> str:
-    now = datetime.now(timezone.utc)
-    exp = now + timedelta(minutes=settings.access_token_exp_minutes)
-    payload = {"sub": sub, "role": role, "type": "access", "iat": now, "exp": exp}
-    return jwt.encode(payload, settings.secret_key, algorithm="HS256")
-
-
-def create_refresh_token(sub: str) -> str:
-    now = datetime.now(timezone.utc)
-    exp = now + timedelta(days=settings.refresh_token_exp_days)
-    payload = {"sub": sub, "type": "refresh", "iat": now, "exp": exp}
-    return jwt.encode(payload, settings.secret_key, algorithm="HS256")
-
-
-def decode_token(token: str) -> Optional[dict]:
+def verify_password(password: str, encoded: str) -> bool:
     try:
-        return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
-    except Exception:
-        return None
+        algorithm, iterations_str, salt_b64, digest_b64 = encoded.split("$", 3)
+        if algorithm != "pbkdf2_sha256":
+            return False
+
+        iterations = int(iterations_str)
+        salt = base64.b64decode(salt_b64.encode("ascii"))
+        expected = base64.b64decode(digest_b64.encode("ascii"))
+    except (ValueError, TypeError, binascii.Error):
+        return False
+
+    computed = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+    return hmac.compare_digest(computed, expected)

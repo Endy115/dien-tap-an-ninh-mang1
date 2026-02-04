@@ -1,1 +1,0 @@
-# MMHCS backend package
